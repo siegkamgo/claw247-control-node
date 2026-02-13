@@ -1,0 +1,17 @@
+[Unit]
+Description=Claw247 Control Node
+After=network.target
+
+[Service]
+Type=simple
+User=claw247
+EnvironmentFile=/etc/default/claw247-controller
+WorkingDirectory=/opt/claw247-control-node
+ExecStart=/usr/bin/node /opt/claw247-control-node/src/server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

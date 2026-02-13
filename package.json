@@ -1,0 +1,30 @@
+{
+  "name": "claw247-control-node",
+  "version": "1.0.0",
+  "description": "Production-ready MVP Control Node API for managing OpenClaw gateways",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "NODE_ENV=production node src/server.js",
+    "dev": "node src/server.js",
+    "bootstrap": "node scripts/bootstrap-dev.js",
+    "seed": "node scripts/seed-workers.js",
+    "gen-known-hosts": "node scripts/gen-known-hosts.js",
+    "test-health": "node scripts/test-health.js"
+  },
+  "keywords": ["api", "claw247", "openclaw", "ssh"],
+  "author": "Claw247",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.2.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "zod": "^3.22.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
