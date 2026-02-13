@@ -1,0 +1,116 @@
+[1mdiff --git a/.env b/.env[m
+[1mdeleted file mode 100644[m
+[1mindex e026408..0000000[m
+[1m--- a/.env[m
+[1m+++ /dev/null[m
+[36m@@ -1,7 +0,0 @@[m
+[31m-PORT=3000[m
+[31m-NODE_ENV=development[m
+[31m-DB_PATH=./data/controller.db[m
+[31m-CLAW247_API_KEY=ZBFukDiLHVeYdoD8QCKwoZatUKb43KCtk2iVM1ncR7M=[m
+[31m-SSH_KEY_PATH=./id_ed25519[m
+[31m-KNOWN_HOSTS_PATH=./known_hosts[m
+[31m-BASE44_ORIGIN=https://claw247.fun[m
+[1mdiff --git a/DEPLOY_UBUNTU.md b/DEPLOY_UBUNTU.md[m
+[1mdeleted file mode 100644[m
+[1mindex 2e1be7e..0000000[m
+[1m--- a/DEPLOY_UBUNTU.md[m
+[1m+++ /dev/null[m
+[36m@@ -1,72 +0,0 @@[m
+[31m-# Deploy on Ubuntu (copy-paste)[m
+[31m-[m
+[31m-These steps install and run the `claw247-control-node` as a systemd service behind nginx. Run as root or with sudo.[m
+[31m-[m
+[31m-1) Create system user and directories[m
+[31m-[m
+[31m-```bash[m
+[31m-adduser --system --group --no-create-home --shell /usr/sbin/nologin claw247[m
+[31m-mkdir -p /var/lib/claw247[m
+[31m-chown claw247:claw247 /var/lib/claw247[m
+[31m-mkdir -p /etc/claw247[m
+[31m-chown claw247:claw247 /etc/claw247[m
+[31m-```[m
+[31m-[m
+[31m-2) Place SSH key and known_hosts[m
+[31m-[m
+[31m-Put your private key for connecting to workers at `/etc/claw247/id_ed25519` with permissions 600 and owner `claw247`. Put the `known_hosts` file at `/etc/claw247/known_hosts`.[m
+[31m-[m
+[31m-```bash[m
+[31m-chown claw247:claw247 /etc/claw247/id_ed25519 /etc/claw247/known_hosts[m
+[31m-chmod 600 /etc/claw247/id_ed25519[m
+[31m-```[m
+[31m-[m
+[31m-3) Install Node.js (18+), build app[m
+[31m-[m
+[31m-```bash[m
+[31m-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -[m
+[31m-apt-get install -y nodejs build-essential[m
+[31m-cd /opt[m
+[31m-git clone REPO_URL claw247-control-node[m
+[31m-cd claw247-control-node[m
+[31m-npm install --production[m
+[31m-```[m
+[31m-[m
+[31m-4) Place service file and start[m
+[31m-[m
+[31m-Copy `systemd/claw247-controller.service` to `/etc/systemd/system/claw247-controller.service` and edit paths if necessary. Ensure `ExecStart` points to installed `src/server.js` (e.g., `/opt/claw247-control-node/src/server.js`) and environment variables are correct.[m
+[31m-[m
+[31m-```bash[m
+[31m-systemctl daemon-reload[m
+[31m-systemctl enable --now claw247-controller[m
+[31m-```[m
+[31m-[m
+[31m-5) Nginx[m
+[31m-[m
+[31m-Install nginx and drop the provided config into `/etc/nginx/sites-available/claw247-controller` and symlink to `sites-enabled`.[m
+[31m-[m
+[31m-```bash[m
+[31m-apt-get install -y nginx[m
+[31m-cp nginx/claw247-controller.conf /etc/nginx/sites-available/claw247-controller[m
+[31m-ln -s /etc/nginx/sites-available/claw247-controller /etc/nginx/sites-enabled/[m
+[31m-nginx -t && systemctl restart nginx[m
+[31m-```[m
+[31m-[m
+[31m-6) TLS (optional)[m
+[31m-[m
+[31m-Use certbot to obtain TLS certs:[m
+[31m-[m
+[31m-```bash[m
+[31m-apt-get install -y certbot python3-certbot-nginx[m
+[31m-certbot --nginx -d api.claw247.fun[m
+[31m-```[m
+[31m-[m
+[31m-7) Environment and DB[m
+[31m-[m
+[31m-Place production environment variables in `/etc/default/claw247-controller` or in the systemd service file as `Environment=` lines. Ensure `DB_PATH=/var/lib/claw247/controller.db`, `SSH_KEY_PATH=/etc/claw247/id_ed25519`, `KNOWN_HOSTS_PATH=/etc/claw247/known_hosts`, and `CLAW247_API_KEY` are set.[m
+[31m-[m
+[31m-8) Why we DO NOT expose OpenClaw UI publicly[m
+[31m-[m
+[31m-- The OpenClaw gateway contains internal control interfaces and tokens; exposing it publicly increases risk of unauthorized access.[m
+[31m-- The control node manages gateways over SSH and requires gateway binding to 127.0.0.1 (local-only), preventing remote access even if network routing is misconfigured.[m
+[31m-- Centralized management via an authenticated API reduces attack surface and enables token rotation and logging.[m
+[1mdiff --git a/data/controller.db b/data/controller.db[m
+[1mdeleted file mode 100644[m
+[1mindex 4526b11..0000000[m
+Binary files a/data/controller.db and /dev/null differ
+[1mdiff --git a/nginx/claw247-controller.conf b/nginx/claw247-controller.conf[m
+[1mdeleted file mode 100644[m
+[1mindex 2074996..0000000[m
+[1m--- a/nginx/claw247-controller.conf[m
+[1m+++ /dev/null[m
+[36m@@ -1,15 +0,0 @@[m
+[31m-server {[m
+[31m-  listen 80;[m
+[31m-  server_name api.claw247.fun;[m
+[31m-[m
+[31m-  location / {[m
+[31m-    proxy_pass http://127.0.0.1:3000;[m
+[31m-    proxy_set_header Host $host;[m
+[31m-    proxy_set_header X-Real-IP $remote_addr;[m
+[31m-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;[m
+[31m-    proxy_set_header X-Forwarded-Proto $scheme;[m
+[31m-    proxy_http_version 1.1;[m
+[31m-    proxy_set_header Upgrade $http_upgrade;[m
+[31m-    proxy_set_header Connection "upgrade";[m
+[31m-  }[m
+[31m-}[m
